@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0,user-scalable=no,maximum-scale=,width=device-width">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,600;1,300&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+    <script src="concelhos_algarve.geojson"></script>
+    <script src="praias.geojson"></script>
+    <script src="restaurantes.geojson"></script>
+    <script src="densidade.geojson"></script>
+    <script src="leaflet-heat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+       html, body, #mapDIV{
+          height: 100%;
+          width: 100%;
+          border: none;
+          
+      }
+      .legend {
+        line-height: 18px;
+        color: #555;
+        }
+    .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+    
+    </style>
+    <title>Informação das Praias do Algarve</title>
+</head>
+<body>
+    <div id='mapDIV'>i</div>
+    
+    <script>
+
+        //Quando carrega a página, fecha todos os popups que estejam abertos
+        
+        $(document).ready(function(){
+            map.closePopup();
+        });
+
+        let map = L.map(document.getElementById('mapDIV'),
+        { center: [37.089,-8.25228],
+            zoom: 10
+        });
+
+    
+
+        //Base maps
+        let basemap =L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png',
+            { attribution: '<a href="http://www.openstreetmap.org" target="_blank">(c)OpenStreetMap </a>' }).addTo(map);
+        let baserelief = L.tileLayer('https://tile.opentopomap.org/{z}/{x}/{y}.png', {});
+        let GoogleRoad = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {});   
+        let GoogleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {});   
+        let DarkMatter = L.tileLayer('http://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {});
+       
+
+        //Concelhos Algarve
+        var theconcelhos= L.geoJSON(concelhos, {
+            color: '#200008',
+            weight: 1,
+            dashArray: '12 8 12',
+            onEachFeature: function(feature,layer){
+            layer.bindPopup(feature.properties.nome_conc); //clicar para pop dos concelhos
+            }
+        });
+        
+        theconcelhos.addTo(map);
+
+        theconcelhos.eachLayer(function(layer){
+            layer.openPopup();
+        });
+
+        
+
+        // PRAIAS //
+
+        var thepraia= L.geoJSON(praias, {
+            color: '#210008',
+            weight: 1,
+            dashArray: '12 8 12',
+            onEachFeature: function(feature,layer){
+                layer.bindPopup("<p><strong>Nome da Praia:</strong></p>"+feature.properties.nome_praia+"<p><strong>Praia Vigiada:</strong></p>"+feature.properties.vigiadas+"<p><strong>Praia Galardoada em 2020:</strong></p>"+feature.properties.galardoadas+"<p><strong>Foto </strong></p>"+"<img src="+feature.properties.fotos+">"); //popUP das praias 
+            }
+        });
+        
+        thepraia.addTo(map);
+
+        thepraia.eachLayer(function(layer){
+            layer.openPopup();
+        });
+
+        
+
+
+        //Restaurantes
+        var therestaurantes= L.geoJSON(restaurantes, {
+            pointToLayer:returnrestaurantes,
+            onEachFeature: function(feature,layer){
+            layer.bindPopup("<p><strong>Restaurante</strong></p>"+feature.properties.nome_resta); // popup dos restaurantes
+            }
+        });
+        
+        
+        
+        therestaurantes.addTo(map);
+
+        therestaurantes.eachLayer(function(layer){
+            layer.openPopup();
+        });
+        
+ 
+        function returnrestaurantes(geoJSON, latlng){
+        var att=geoJSON.properties;
+        return L.circleMarker(latlng,{radius: 7, color:"orange"})
+        };
+
+        //Densidade populacional
+        
+
+        function getColor(d) {
+        return d > 300 ? '#800026':
+               d > 157 ? '#BD0026':
+               d > 55 ? '#E31A1C':
+               d > 21 ? '#FC4E2A':
+               d > 4 ? '#FD8D3C':
+                         'FFEDA0';
+        }
+        function style(feature) {
+            return {
+                fillColor: getColor(feature.properties.dens_pop),
+                weight: 2, 
+                opacity: 1,
+                color: 'black',
+                dashArray: '3',
+                fillOpacity: 0.7
+            };
+        }
+        var dens = L.geoJSON(densidade, {style: style}).addTo(map)
+        var legend = L.control({position: 'bottomright'});
+
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'info legend'),
+                grades = [4, 21, 55, 157, 300],
+                labels = [];
+            
+
+            for (var i = 0; i < grades.length; i++) {
+                div.innerHTML +=
+                '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+                grades[i] + (grades[i +1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+            }
+            return div;
+        };
+        legend.addTo(map);
+        
+        //Heat Map 
+
+        geoJson2heat = function(geojson) {
+            return geojson.features.map(function(feature) {
+            return [parseFloat(feature.geometry.coordinates[1]), parseFloat(feature.geometry.coordinates[0])];
+            });
+            }
+
+            var geoData = geoJson2heat(praias, 1);
+            var heatMap = new L.heatLayer(geoData,{minOpacity: 0.4,radius: 15, gradient: {0.4: 'blue', 0.5: 'lime', 0.6: 'red'}});
+            map.addLayer(heatMap);
+        
+        //Basemaps
+
+        var base= {'Basemap Open Street Map': basemap,
+                    'Basemap Relief': baserelief,
+                    'Google Roads': GoogleRoad,
+                    'Google Satélite': GoogleHybrid,
+                    'Dark Matter': DarkMatter
+
+    };
+        var shapes={
+            '<strong>Concelhos do Algarve</strong>':theconcelhos,
+            '<strong>Praias Balneares (121)</strong>':thepraia,
+            '<strong>Restaurantes localizados até 50 metros das Praias Balneares (299)</strong>':therestaurantes,
+            '<strong>Densidade Populacional (km)</strong>':dens,
+            '<strong>Mapa de calor das praias</strong>':heatMap
+        };
+        L.control.layers(base, shapes).addTo(map);
+        
+        //Escala
+        var scale = L.control.scale()
+        scale.addTo(map)
+
+
+    </script>
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
